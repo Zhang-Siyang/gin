@@ -503,6 +503,11 @@ func updateRouteTree(n *node) {
 	}
 }
 
+// UpdateRouteTrees exposes the updateRouteTrees function to the public
+func (engine *Engine) UpdateRouteTrees() {
+	engine.updateRouteTrees()
+}
+
 // updateRouteTrees do update to the route trees
 func (engine *Engine) updateRouteTrees() {
 	for _, tree := range engine.trees {
