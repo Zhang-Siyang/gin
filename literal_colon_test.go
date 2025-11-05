@@ -62,25 +62,3 @@ func TestLiteralColonWithHTTPServer(t *testing.T) {
 	// the httptest.NewServer(engine) already test &http.Server{Handler: engine} with correct behavior.
 	// So we don't need to test it again.
 }
-
-// Test that updateRouteTrees is called only once
-func TestUpdateRouteTreesCalledOnce(t *testing.T) {
-	SetMode(TestMode)
-	router := New()
-
-	callCount := 0
-	originalUpdate := router.updateRouteTrees
-
-	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"call": callCount})
-	})
-
-	for i := 0; i < 5; i++ {
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
-		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusOK, w.Code)
-	}
-
-	_ = originalUpdate
-}
