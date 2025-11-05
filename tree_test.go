@@ -979,17 +979,17 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 
 func TestTreeInvalidEscape(t *testing.T) {
 	routes := map[string]bool{
-		"/r1/r":    true,
-		"/r2/:r":   true,
-		"/r3/\\:r": true,
+		`/r1/r`:   true,
+		`/r2/:r`:  true,
+		`/r3/\:r`: true,
 	}
 	tree := &node{}
-	for route, valid := range routes {
+	for route, shouldValid := range routes {
 		recv := catchPanic(func() {
 			tree.addRoute(route, fakeHandler(route))
 		})
-		if recv == nil != valid {
-			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		if isInvalid := recv != nil; shouldValid && isInvalid {
+			t.Fatalf("%s should be %t but got %v", route, shouldValid, recv)
 		}
 	}
 }
