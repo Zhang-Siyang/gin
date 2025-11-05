@@ -1,6 +1,7 @@
 package gin
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,84 +10,57 @@ import (
 )
 
 func TestLiteralColonWithRun(t *testing.T) {
-	SetMode(TestMode)
-	router := New()
+	engine := New()
+	engine.GET(`/r\:r`, func(c *Context) { c.String(http.StatusOK, "it worked") })
 
-	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"path": "literal_colon"})
-	})
+	var engineBaseURL string
+	{
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+		defer listener.Close()
 
-	router.updateRouteTrees()
+		go func() {
+			// err is meaningless here
+			_ = engine.RunListener(listener)
+		}()
+		engineBaseURL = "http://" + listener.Addr().String()
+	}
 
-	w := httptest.NewRecorder()
-
-	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "literal_colon")
+	testRequest(t, engineBaseURL+`/r:r`, "", "it worked")
 }
 
 func TestLiteralColonWithDirectServeHTTP(t *testing.T) {
-	SetMode(TestMode)
-	router := New()
+	engine := New()
+	engine.GET(`/r\:r`, func(c *Context) { c.String(http.StatusOK, "it worked") })
 
-	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"path": "literal_colon"})
-	})
+	recorder := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, `/r:r`, nil)
+	assert.NoError(t, err)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
-	router.ServeHTTP(w, req)
+	http.Handler(engine).ServeHTTP(recorder, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "literal_colon")
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "it worked")
 }
 
 func TestLiteralColonWithHandler(t *testing.T) {
+	engine := New()
+	engine.GET(`/r\:r`, func(c *Context) { c.String(http.StatusOK, "it worked") })
 
-	SetMode(TestMode)
-	router := New()
+	recorder := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, `/r:r`, nil)
+	assert.NoError(t, err)
 
-	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"path": "literal_colon"})
-	})
+	http.Handler(engine.Handler()).ServeHTTP(recorder, req)
 
-	handler := router.Handler()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
-	handler.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "literal_colon")
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "it worked")
 }
 
 func TestLiteralColonWithHTTPServer(t *testing.T) {
-	SetMode(TestMode)
-	router := New()
-
-	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"path": "literal_colon"})
-	})
-
-	router.GET("/test/:param", func(c *Context) {
-		c.JSON(http.StatusOK, H{"param": c.Param("param")})
-	})
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "literal_colon")
-
-	w2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest(http.MethodGet, "/test/foo", nil)
-	router.ServeHTTP(w2, req2)
-
-	assert.Equal(t, http.StatusOK, w2.Code)
-	assert.Contains(t, w2.Body.String(), "foo")
+	// After remove engine.updateRouteTrees in TestEscapedColon(),
+	// the httptest.NewServer(engine) already test &http.Server{Handler: engine} with correct behavior.
+	// So we don't need to test it again.
 }
 
 // Test that updateRouteTrees is called only once
