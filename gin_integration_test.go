@@ -588,7 +588,6 @@ func TestEscapedColon(t *testing.T) {
 		f(`\foo:`)
 	})
 
-	router.updateRouteTrees()
 	ts := httptest.NewServer(router)
 	defer ts.Close()
 

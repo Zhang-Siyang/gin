@@ -94,9 +94,7 @@ const (
 type Engine struct {
 	RouterGroup
 
-	// routeTreesUpdated ensures that the initialization or update of the route trees
-	// (used for routing HTTP requests) happens only once, even if called multiple times
-	// concurrently. It helps prevent race conditions and redundant setup operations.
+	// routeTreesUpdated ensures Engine.updateRouteTrees runs at most once per engine instance.
 	routeTreesUpdated sync.Once
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
@@ -539,7 +537,6 @@ func (engine *Engine) Run(addr ...string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
-	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine.Handler())
